@@ -34,7 +34,7 @@ const BookService = () => {
       setError(true);
       return;
     }
-    let result = await fetch("https://cyber-bandhu.onrender.com/service", {
+    let result = await fetch("http://localhost:5000/service", {
       method: "POST",
       body: JSON.stringify({ user_name,landmark ,mobile_no ,email,time,date ,address ,city ,district,state,service_name,service_des}),
       headers: { "Content-Type": "application/json" },

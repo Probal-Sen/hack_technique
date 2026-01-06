@@ -20,7 +20,7 @@ const AdminDashboard = () => {
 
   const getPendingServices = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/pending`, {
+      const res = await fetch(`http://localhost:5000/service/pending`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
 
   const getPendingQuery = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/query/pending`, {
+      const res = await fetch(`http://localhost:5000/query/pending`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -50,7 +50,7 @@ const AdminDashboard = () => {
 
   const getActiveExperts = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/expert/active`, {
+      const res = await fetch(`http://localhost:5000/expert/active`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -65,7 +65,7 @@ const AdminDashboard = () => {
 
   const getAllServices = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/all`, {
+      const res = await fetch(`http://localhost:5000/service/all`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -218,7 +218,7 @@ const AdminDashboard = () => {
                                   const newStatus = (form.elements.namedItem("status") as HTMLSelectElement).value;
                                   try {
                                     const res = await fetch(
-                                      `https://cyber-bandhu.onrender.com/service/update/${booking._id}`,
+                                      `http://localhost:5000/service/update/${booking._id}`,
                                       {
                                         method: "PUT",
                                         headers: {
@@ -316,7 +316,7 @@ const AdminDashboard = () => {
                                   const newStatus = (form.elements.namedItem("status") as HTMLSelectElement).value;
                                   try {
                                     const res = await fetch(
-                                      `https://cyber-bandhu.onrender.com/query/update/${booking._id}`,
+                                      `http://localhost:5000/query/update/${booking._id}`,
                                       {
                                         method: "PUT",
                                         headers: {

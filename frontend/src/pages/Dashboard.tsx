@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { History } from "lucide-react";
+import { History, MapPin, Loader2, CheckCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -25,7 +26,11 @@ const UserDashboard = () => {
     service_des: "",
     date: "",
     time: "",
+    location: null as { type: string; coordinates: [number, number] } | null,
+    female_preference: false,
   });
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string>("");
 
   // User profile update form state (clone of user to edit)
   const [updateForm, setUpdateForm] = useState({ ...storedUser });
@@ -40,7 +45,7 @@ const UserDashboard = () => {
   // Fetch fresh user profile
   const fetchUserProfile = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/user/${user._id}`, {
+      const res = await fetch(`http://localhost:5000/user/${user._id}`, {
         headers: { authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -79,6 +84,72 @@ const UserDashboard = () => {
     setServiceForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle checkbox changes
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setServiceForm((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  // Fetch location using browser geolocation
+  const handleFetchLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Location not supported",
+        description: "Geolocation is not supported by your browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFetchingLocation(true);
+    setLocationStatus("Fetching location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { longitude, latitude } = position.coords;
+        setServiceForm((prev) => ({
+          ...prev,
+          location: {
+            type: "Point",
+            coordinates: [longitude, latitude], // MongoDB GeoJSON format: [longitude, latitude]
+          },
+        }));
+        setLocationStatus(`Location fetched: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        setIsFetchingLocation(false);
+        toast({
+          title: "Location fetched successfully",
+          description: "Your location has been captured.",
+        });
+      },
+      (error) => {
+        setIsFetchingLocation(false);
+        let errorMessage = "Failed to fetch location.";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied. Please enable location permissions.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timeout. Please try again.";
+            break;
+        }
+        setLocationStatus(errorMessage);
+        toast({
+          title: "Location fetch failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
   // Submit service request and update user history/profile
   const submitServiceRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,10 +159,22 @@ const UserDashboard = () => {
       return;
     }
 
+    if (!serviceForm.location || !serviceForm.location.coordinates) {
+      toast({
+        title: "Location required",
+        description: "Please click 'Fetch Location' to capture your current location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Post service request to service API
-      const serviceBody = {
-        ...serviceForm,
+      const serviceBody: any = {
+        service_name: serviceForm.service_name,
+        service_des: serviceForm.service_des,
+        date: serviceForm.date,
+        time: serviceForm.time,
         user_id: user._id,
         user_name: user.name,
         mobile_no: user.mobile_no,
@@ -102,9 +185,15 @@ const UserDashboard = () => {
         district: user.district,
         state: user.state,
         status: "pending",
+        female_preference: serviceForm.female_preference,
       };
 
-      const resService = await fetch("https://cyber-bandhu.onrender.com/service", {
+      // Add location if it exists
+      if (serviceForm.location && serviceForm.location.coordinates) {
+        serviceBody.location = serviceForm.location;
+      }
+
+      const resService = await fetch("http://localhost:5000/service", {
         method: "POST",
         headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
         body: JSON.stringify(serviceBody),
@@ -127,7 +216,7 @@ const UserDashboard = () => {
 
       const updatedHistory = [...(user.history || []), newHistoryEntry];
 
-      const resUserUpdate = await fetch(`https://cyber-bandhu.onrender.com/user/${user._id}`, {
+      const resUserUpdate = await fetch(`http://localhost:5000/user/${user._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
         body: JSON.stringify({ history: updatedHistory }),
@@ -144,7 +233,10 @@ const UserDashboard = () => {
           service_des: "",
           date: "",
           time: "",
+          location: null,
+          female_preference: false,
         });
+        setLocationStatus("");
         toast({ title: "Service requested successfully" });
       } else {
         toast({ title: "Failed to update user history" });
@@ -172,7 +264,7 @@ const UserDashboard = () => {
   const submitProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/user/${user._id}`, {
+      const res = await fetch(`http://localhost:5000/user/${user._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", authorization: `Bearer ${token}` },
         body: JSON.stringify(updateForm),
@@ -286,7 +378,7 @@ const UserDashboard = () => {
               </div>
 
               <div>
-                <label className="block mb-1">Time *</label>
+                <label className="block mb-1 dark:text-white">Time *</label>
                 <Input
                   name="time"
                   value={serviceForm.time}
@@ -294,6 +386,59 @@ const UserDashboard = () => {
                   required
                   type="time"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="dark:text-white">Location * (Required to match nearby experts)</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleFetchLocation}
+                    disabled={isFetchingLocation}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {isFetchingLocation ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Fetching...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-4 w-4" />
+                        Fetch Location
+                      </>
+                    )}
+                  </Button>
+                  {serviceForm.location && (
+                    <div className="flex-1 px-3 py-2 border rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Location captured
+                    </div>
+                  )}
+                </div>
+                {locationStatus && (
+                  <p className={`text-xs ${serviceForm.location ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"}`}>
+                    {locationStatus}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Click "Fetch Location" to allow the browser to access your location. This is required so we can match you with nearby experts.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="female_preference"
+                  name="female_preference"
+                  checked={serviceForm.female_preference}
+                  onChange={handleCheckboxChange}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <Label htmlFor="female_preference" className="text-sm font-medium cursor-pointer dark:text-white">
+                  I prefer a female expert/assistant
+                </Label>
               </div>
 
               <Button type="submit">Submit Request</Button>

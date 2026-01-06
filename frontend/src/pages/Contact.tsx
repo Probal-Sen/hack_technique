@@ -26,7 +26,7 @@ const Contact = () => {
       setError(true);
       return;
     }
-    let result = await fetch("https://cyber-bandhu.onrender.com/query", {
+    let result = await fetch("http://localhost:5000/query", {
       method: "POST",
       body: JSON.stringify({ f_name, l_name, mobile_no, email, query_name, query_des }),
       headers: { "Content-Type": "application/json" },

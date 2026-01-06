@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { History } from "lucide-react";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ const UserDashboard = () => {
       toast({ title: "Error fetching profile" });
     }
   };
+
 
   // Update service stats based on user history
   const updateServiceStats = (history: any[]) => {
@@ -191,14 +193,25 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white dark:bg-gray-800 shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">User Dashboard</h1>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            Logout
-          </Button>
+          <h1 className="text-xl font-bold dark:text-white">User Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/user/history")}
+              className="flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              History
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -206,36 +219,36 @@ const UserDashboard = () => {
       <main className="container mx-auto px-4 py-6 flex-grow">
         {/* Stats */}
         <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Total Services Requested</CardTitle>
+              <CardTitle className="dark:text-white">Total Services Requested</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{serviceStats.totalRequested}</p>
+              <p className="text-2xl font-bold dark:text-white">{serviceStats.totalRequested}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Pending Services</CardTitle>
+              <CardTitle className="dark:text-white">Pending Services</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{serviceStats.pending}</p>
+              <p className="text-2xl font-bold dark:text-white">{serviceStats.pending}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Completed Services</CardTitle>
+              <CardTitle className="dark:text-white">Completed Services</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{serviceStats.completed}</p>
+              <p className="text-2xl font-bold dark:text-white">{serviceStats.completed}</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Request Service Form */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Request a Service</CardTitle>
+            <CardTitle className="dark:text-white">Request a Service</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={submitServiceRequest} className="space-y-4">
@@ -300,7 +313,7 @@ const UserDashboard = () => {
       {/* Profile Modal */}
       {profileModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-6 max-w-lg w-full relative">
+          <div className="bg-white dark:bg-gray-800 rounded p-6 max-w-lg w-full relative">
             <button
               className="absolute top-2 right-3 text-gray-700 hover:text-gray-900"
               onClick={closeProfileModal}
@@ -308,8 +321,8 @@ const UserDashboard = () => {
             >
               ✕
             </button>
-            <h2 className="text-xl font-bold mb-4">Profile Details</h2>
-            <div>
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Profile Details</h2>
+            <div className="dark:text-gray-300">
               <p><strong>Name:</strong> {user.name}</p>
               <p><strong>Email:</strong> {user.email}</p>
               <p><strong>Phone:</strong> {user.mobile_no}</p>
@@ -327,15 +340,15 @@ const UserDashboard = () => {
       {/* Update Profile Modal */}
       {updateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-6 max-w-lg w-full relative">
+          <div className="bg-white dark:bg-gray-800 rounded p-6 max-w-lg w-full relative">
             <button
-              className="absolute top-2 right-3 text-gray-700 hover:text-gray-900"
+              className="absolute top-2 right-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               onClick={closeUpdateModal}
               aria-label="Close update modal"
             >
               ✕
             </button>
-            <h2 className="text-xl font-bold mb-4">Update Profile</h2>
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Update Profile</h2>
             <form onSubmit={submitProfileUpdate} className="space-y-4">
               <Input
                 name="name"

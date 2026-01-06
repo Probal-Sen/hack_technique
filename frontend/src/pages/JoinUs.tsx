@@ -25,7 +25,9 @@ import {
     UserPlus,
     LogIn,
     CheckCircle,
-    FileText
+    FileText,
+    MapPin,
+    Loader2
 } from "lucide-react";
 
 const JoinUs = () => {
@@ -45,9 +47,12 @@ const JoinUs = () => {
         education: "",
         experience: "",
         whyJoin: "",
-        password: "",    // <-- Added password field
+        password: "",
+        location: null as { type: string; coordinates: [number, number] } | null,
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+    const [locationStatus, setLocationStatus] = useState<string>("");
     const { toast } = useToast();
     const location = useLocation();
 
@@ -113,6 +118,65 @@ const JoinUs = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const handleFetchLocation = () => {
+        if (!navigator.geolocation) {
+            toast({
+                title: "Location not supported",
+                description: "Geolocation is not supported by your browser.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsFetchingLocation(true);
+        setLocationStatus("Fetching location...");
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { longitude, latitude } = position.coords;
+                setFormData((prev) => ({
+                    ...prev,
+                    location: {
+                        type: "Point",
+                        coordinates: [longitude, latitude], // MongoDB GeoJSON format: [longitude, latitude]
+                    },
+                }));
+                setLocationStatus(`Location fetched: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+                setIsFetchingLocation(false);
+                toast({
+                    title: "Location fetched successfully",
+                    description: "Your location has been captured.",
+                });
+            },
+            (error) => {
+                setIsFetchingLocation(false);
+                let errorMessage = "Failed to fetch location.";
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = "Location access denied. Please enable location permissions.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = "Location information unavailable.";
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = "Location request timeout. Please try again.";
+                        break;
+                }
+                setLocationStatus(errorMessage);
+                toast({
+                    title: "Location fetch failed",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+            }
+        );
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -144,8 +208,9 @@ const JoinUs = () => {
             return;
         }
 
+
         try {
-            const response = await fetch("https://cyber-bandhu.onrender.com/expert/register", {
+            const response = await fetch("http://localhost:5000/expert/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
@@ -170,7 +235,6 @@ const JoinUs = () => {
                     dob: "",
                     gender: "",
                     govt_id: "",
-                    
                     address: "",
                     landmark: "",
                     city: "",
@@ -181,7 +245,9 @@ const JoinUs = () => {
                     experience: "",
                     whyJoin: "",
                     password: "",
+                    location: null,
                 });
+                setLocationStatus("");
             }
         } catch {
             toast({
@@ -525,6 +591,45 @@ const JoinUs = () => {
                                 onChange={handleInputChange}
                                 placeholder="Pincode"
                             />
+
+                            <div className="space-y-2">
+                                <Label>Location (Optional - Helps with service matching)</Label>
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        onClick={handleFetchLocation}
+                                        disabled={isFetchingLocation}
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                    >
+                                        {isFetchingLocation ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Fetching...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MapPin className="h-4 w-4" />
+                                                Fetch Location
+                                            </>
+                                        )}
+                                    </Button>
+                                    {formData.location && (
+                                        <div className="flex-1 px-3 py-2 border rounded-md bg-green-50 text-green-700 text-sm flex items-center">
+                                            <CheckCircle className="h-4 w-4 mr-2" />
+                                            Location captured
+                                        </div>
+                                    )}
+                                </div>
+                                {locationStatus && (
+                                    <p className={`text-xs ${formData.location ? "text-green-600" : "text-gray-500"}`}>
+                                        {locationStatus}
+                                    </p>
+                                )}
+                                <p className="text-xs text-gray-500">
+                                    Click "Fetch Location" to allow the browser to access your location. This helps us match you with nearby students. (Optional)
+                                </p>
+                            </div>
 
                             <select
                                 name="education"

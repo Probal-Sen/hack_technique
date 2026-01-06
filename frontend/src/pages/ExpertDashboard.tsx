@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { UsersRound, Calendar, LogOut, BarChart } from "lucide-react";
+import { UsersRound, Calendar, LogOut, BarChart, Star } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -17,16 +17,39 @@ const ExpertDashboard = () => {
   const [expertServices, setExpertServices] = useState<any[]>([]);
   const [serviceDetails, setServiceDetails] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [expertData, setExpertData] = useState<any>(null);
 
   const token = localStorage.getItem("auth");
   const expert = JSON.parse(localStorage.getItem("expert") || "{}");
   const expertId = expert._id;
 
+  // Fetch expert data
+  const getExpertData = async () => {
+    if (!expertId) return;
+    try {
+      // Since we don't have a single expert endpoint, we'll fetch from expert/all and find our expert
+      const res = await fetch(`http://localhost:5000/expert/all`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+      const experts = await res.json();
+      const currentExpert = Array.isArray(experts) 
+        ? experts.find((e: any) => e._id === expertId)
+        : null;
+      if (currentExpert) {
+        setExpertData(currentExpert);
+      }
+    } catch (err) {
+      console.error("Error fetching expert data:", err);
+    }
+  };
+
   // Fetch all services assigned to this expert
   const getExpertServices = async () => {
     if (!expertId) return;
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/expert/${expertId}`, {
+      const res = await fetch(`http://localhost:5000/service/expert/${expertId}`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -41,7 +64,7 @@ const ExpertDashboard = () => {
 
   const getPendingServices = async () => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/pending`, {
+      const res = await fetch(`http://localhost:5000/service/pending`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -57,7 +80,7 @@ const ExpertDashboard = () => {
   const getMyPendingServices = async () => {
     if (!expertId) return;
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/pending/${expertId}`, {
+      const res = await fetch(`http://localhost:5000/service/pending/${expertId}`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -79,13 +102,14 @@ const ExpertDashboard = () => {
     getPendingServices();
     getMyPendingServices();
     getExpertServices();
+    getExpertData();
   }, [token, expertId, navigate]);
 
   // Handlers...
 
   const fetchServiceDetails = async (id: string) => {
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/details/${id}`, {
+      const res = await fetch(`http://localhost:5000/service/details/${id}`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
@@ -109,7 +133,7 @@ const ExpertDashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`https://cyber-bandhu.onrender.com/service/update/${serviceId}`, {
+      const res = await fetch(`http://localhost:5000/service/update/${serviceId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -462,26 +486,173 @@ const ExpertDashboard = () => {
         {/* Modal for Service Details */}
         {modalOpen && serviceDetails && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
               <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 text-2xl"
                 onClick={closeModal}
                 aria-label="Close modal"
               >
                 ✕
               </button>
               <h2 className="text-xl font-bold mb-4">Service Details</h2>
-              <div>
-                <p><strong>Name:</strong> {serviceDetails.user_name}</p>
-                <p><strong>Mobile:</strong> {serviceDetails.mobile_no}</p>
-                <p><strong>Email:</strong> {serviceDetails.email}</p>
-                <p><strong>Service:</strong> {serviceDetails.service_name}</p>
-                <p><strong>Description:</strong> {serviceDetails.service_des}</p>
-                <p><strong>Address:</strong> {serviceDetails.address}</p>
-                <p><strong>Date:</strong> {new Date(serviceDetails.date).toLocaleString()}</p>
-                <p><strong>Status:</strong> {serviceDetails.status}</p>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Name:</strong></p>
+                    <p>{serviceDetails.user_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Mobile:</strong></p>
+                    <p>{serviceDetails.mobile_no}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Email:</strong></p>
+                    <p>{serviceDetails.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Status:</strong></p>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs inline-block ${
+                        serviceDetails.status === "done"
+                          ? "bg-green-100 text-green-800"
+                          : serviceDetails.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {serviceDetails.status?.charAt(0).toUpperCase() + serviceDetails.status?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-600"><strong>Service:</strong></p>
+                  <p>{serviceDetails.service_name}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-600"><strong>Description:</strong></p>
+                  <p>{serviceDetails.service_des}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-600"><strong>Address:</strong></p>
+                  <p>{serviceDetails.address}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-600"><strong>Date:</strong></p>
+                  <p>{new Date(serviceDetails.date).toLocaleString()}</p>
+                </div>
+
+                {/* Rating and Feedback Section */}
+                {serviceDetails.status === "done" && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold mb-3">Rating & Feedback</h3>
+                    
+                    {/* Overall Expert Rating */}
+                    {expertData && expertData.rating && parseFloat(expertData.rating) > 0 && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-1"><strong>Your Overall Rating:</strong></p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-5 w-5 ${
+                                  star <= parseFloat(expertData.rating || "0")
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-medium">
+                            {parseFloat(expertData.rating).toFixed(1)} / 5.0
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Service-specific Rating and Feedback */}
+                    {serviceDetails.rating && serviceDetails.rating !== "0" ? (
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-2"><strong>Rating for this service:</strong></p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-5 w-5 ${
+                                    star <= parseFloat(serviceDetails.rating || "0")
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium">
+                              {parseFloat(serviceDetails.rating).toFixed(1)} / 5.0
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {serviceDetails.feedback && (
+                          <div>
+                            <p className="text-sm text-gray-600 mb-2"><strong>Feedback:</strong></p>
+                            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{serviceDetails.feedback}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                          No rating or feedback has been provided for this service yet.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment Information */}
+                {serviceDetails.status === "done" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold mb-3">Payment Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {serviceDetails.payment_amount && (
+                        <div>
+                          <p className="text-sm text-gray-600"><strong>Payment Amount:</strong></p>
+                          <p className="text-lg font-semibold text-green-600">
+                            ₹{parseFloat(serviceDetails.payment_amount).toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                      {serviceDetails.payment_type && (
+                        <div>
+                          <p className="text-sm text-gray-600"><strong>Payment Type:</strong></p>
+                          <p>{serviceDetails.payment_type}</p>
+                        </div>
+                      )}
+                    </div>
+                    {serviceDetails.remarks && (
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-600"><strong>Remarks:</strong></p>
+                        <p>{serviceDetails.remarks}</p>
+                      </div>
+                    )}
+                    {serviceDetails.solved_date && (
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-600"><strong>Completed On:</strong></p>
+                        <p>{new Date(serviceDetails.solved_date).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-6 flex justify-end">
                 <Button variant="ghost" onClick={closeModal}>
                   Close
                 </Button>

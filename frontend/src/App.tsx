@@ -22,6 +22,7 @@ import UserLogin from "./pages/UserLogin";
 import UserRegister from "./pages/UserRegister";
 import AdminRegister from "./pages/AdminRegister";
 import UserDashboard from "./pages/Dashboard";
+import UserHistory from "./pages/UserHistory";
 
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/history" element={<UserHistory />} />
           <Route path="/expert/dashboard" element={<ExpertDashboard />} />
           <Route path="/expert/update-service/:id" element={<UpdateServicePage />} />
           <Route path="/book-service" element={<BookService />} />
